@@ -16,6 +16,7 @@
     a.button { display:inline-block; background:#0b74de; color:#fff; padding:0.5rem 0.9rem; border-radius:6px; text-decoration:none; }
     .contact { margin-top:1rem; padding:1rem; background:#f1f6fb; border-radius:6px; }
     .contact a { color:#0b74de; text-decoration:none; margin-left:0.6rem; }
+    input.copy { width:60%; padding:0.3rem; border:1px solid #dcdcdc; border-radius:4px; }
   </style>
 </head>
 <body>
@@ -56,7 +57,8 @@
           <a href="https://t.me/yourusername" target="_blank" rel="noopener">حساب تيليغرام</a>
         </p>
         <p style="margin-top:0.8rem">
-          أو انسخ رابط التضمين (share/embed): <input type="text" value="https://filistinhatay.github.io" readonly style="width:60%;padding:0.3rem" />
+          أو انسخ رابط الموقع للتضمين:
+          <input class="copy" type="text" value="https://filistinhatay.github.io/" readonly />
         </p>
       </div>
 
@@ -67,5 +69,15 @@
       تم التحديث آخر مرة عبر GitHub Pages.
     </footer>
   </div>
+  <script>
+    // ميزة بسيطة لنسخ رابط الموقع للوحة النقل عند النقر
+    document.addEventListener('click', function(e){
+      if(e.target && e.target.classList && e.target.classList.contains('copy')){
+        e.target.select();
+        document.execCommand('copy');
+        alert('تم نسخ رابط الموقع');
+      }
+    });
+  </script>
 </body>
 </html>
