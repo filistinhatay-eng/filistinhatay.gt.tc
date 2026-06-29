@@ -39,6 +39,8 @@ interface AdminPanelProps {
   
   onSaveAnn: (item: TopAnnouncement) => void;
   onDeleteAnn: (id: string) => void;
+  assistants: any[];
+  onSaveAssistants: (updated: any[]) => void;
 }
 
 type AdminTab = 'news' | 'courses' | 'deptAnnouncements' | 'activities' | 'links' | 'univ' | 'announcements' | 'logo' | 'assistants';
@@ -102,7 +104,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSaveActivity, onDeleteActivity,
   onSaveLink, onDeleteLink,
   onSaveUnivInfo,
-  onSaveAnn, onDeleteAnn
+  onSaveAnn, onDeleteAnn,
+  assistants: propsAssistants,
+  onSaveAssistants
 }) => {
   const { t, getText, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdminTab>('news');
@@ -110,9 +114,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Assistant account state
   const [assistants, setAssistants] = useState<any[]>(() => {
-    const raw = localStorage.getItem('pales_union_assistant_accounts');
-    return raw ? JSON.parse(raw) : [];
+    return propsAssistants || [];
   });
+
+  React.useEffect(() => {
+    if (propsAssistants) {
+      setAssistants(propsAssistants);
+    }
+  }, [propsAssistants]);
+
   const [newAssUsername, setNewAssUsername] = useState('');
   const [newAssPassword, setNewAssPassword] = useState('');
   const [assError, setAssError] = useState('');
@@ -149,6 +159,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const updated = [...assistants, newAss];
     setAssistants(updated);
     localStorage.setItem('pales_union_assistant_accounts', JSON.stringify(updated));
+    onSaveAssistants(updated);
     setNewAssUsername('');
     setNewAssPassword('');
     triggerToast(language === 'ar' ? 'تم إضافة الحساب بنجاح!' : 'Hesap başarıyla eklendi!');
@@ -159,6 +170,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const updated = assistants.filter(acc => acc.id !== id);
       setAssistants(updated);
       localStorage.setItem('pales_union_assistant_accounts', JSON.stringify(updated));
+      onSaveAssistants(updated);
       triggerToast(language === 'ar' ? 'تم حذف الحساب بنجاح!' : 'Hesap başarıyla silindi!');
     }
   };
@@ -1285,38 +1297,99 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="block font-bold text-slate-700">{t('imageUrl')}</label>
-                    <div className="flex gap-2">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'تصنيف الفعالية' : 'Etkinlik Sınıflandırması'}
+                    </label>
+                    <select
+                      id="act-form-is-past"
+                      value={editActivityItem.isPast ? 'past' : 'upcoming'}
+                      onChange={(e) => {
+                        const isPastVal = e.target.value === 'past';
+                        setEditActivityItem({
+                          ...editActivityItem,
+                          isPast: isPastVal,
+                          registrationEnabled: isPastVal ? false : editActivityItem.registrationEnabled
+                        });
+                      }}
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs font-semibold bg-white"
+                    >
+                      <option value="upcoming">
+                        {language === 'ar' ? 'فعالية قادمة (للتقديم والتسجيل)' : 'Gelecek Etkinlik (Başvuruya Açık)'}
+                      </option>
+                      <option value="past">
+                        {language === 'ar' ? 'فعالية سابقة (تمت مشاركتها للمشاهدة والأرشيف)' : 'Geçmiş Etkinlik (Arşiv / Paylaşım)'}
+                      </option>
+                    </select>
+                  </div>
+
+                  {!editActivityItem.isPast && (
+                    <div className="flex items-center gap-2 pt-5 select-none">
                       <input
-                        id="act-form-img"
-                        type="text" required
-                        value={editActivityItem.image || ''}
-                        onChange={(e) => setEditActivityItem({ ...editActivityItem, image: e.target.value })}
-                        className="flex-1 p-2 border border-slate-200 rounded-lg text-xs"
-                        placeholder="https://..."
+                        id="act-form-reg-enabled"
+                        type="checkbox"
+                        checked={editActivityItem.registrationEnabled || false}
+                        onChange={(e) => setEditActivityItem({ ...editActivityItem, registrationEnabled: e.target.checked })}
+                        className="w-4 h-4 text-red-600 border-slate-200 rounded"
                       />
-                      <label className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold px-3 py-2 rounded-lg cursor-pointer text-center flex items-center justify-center text-xs shrink-0 select-none">
-                        <span>{language === 'ar' ? 'رفع صورة' : 'Fotoğraf Yükle'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleImageUpload(e, (url) => setEditActivityItem({ ...editActivityItem, image: url }))}
-                        />
+                      <label htmlFor="act-form-reg-enabled" className="font-bold text-slate-700">
+                        {t('activeStatus')} ({t('eventRegistration')})
                       </label>
                     </div>
+                  )}
+                </div>
+
+                {/* Highly Polished Image Management block */}
+                <div className="space-y-2 border border-slate-150 p-3.5 rounded-xl bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    {editActivityItem.image && (
+                      <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-white">
+                        <img src={editActivityItem.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-500">
+                      <span className="font-bold text-slate-700 block text-xs">
+                        {language === 'ar' ? 'صورة الفعالية' : 'Etkinlik Görseli'}
+                      </span>
+                      {language === 'ar' ? 'اختر صورة من جهازك أو ضع رابط ويب مباشرة.' : 'Cihazınızdan bir görsel seçin veya doğrudan bir URL girin.'}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 pt-4 select-none">
-                    <input
-                      id="act-form-reg-enabled"
-                      type="checkbox"
-                      checked={editActivityItem.registrationEnabled || false}
-                      onChange={(e) => setEditActivityItem({ ...editActivityItem, registrationEnabled: e.target.checked })}
-                      className="w-4 h-4 text-red-600 border-slate-200 rounded"
-                    />
-                    <label htmlFor="act-form-reg-enabled" className="font-bold text-slate-700">
-                      {t('activeStatus')} ({t('eventRegistration')})
-                    </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px]">
+                    <div className="space-y-1">
+                      <label className="block text-slate-600 font-bold">
+                        {language === 'ar' ? 'رفع ملف صورة جديد' : 'Yeni Fotoğraf Dosyası Yükle'}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === 'string') {
+                                setEditActivityItem({ ...editActivityItem, image: reader.result });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-600 font-bold">
+                        {language === 'ar' ? 'أو ضع رابط صورة ويب مباشر' : 'Veya Doğrudan Görsel Bağlantısı (URL)'}
+                      </label>
+                      <input
+                        id="act-form-img-url"
+                        type="text"
+                        required
+                        value={editActivityItem.image || ''}
+                        onChange={(e) => setEditActivityItem({ ...editActivityItem, image: e.target.value })}
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1386,7 +1459,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {activities.map(item => (
                     <div id={`admin-activity-row-${item.id}`} key={item.id} className="py-3 flex justify-between items-center gap-4 text-xs">
                       <div className="truncate flex-1">
-                        <span className="font-extrabold text-slate-900 block truncate">{getText(item.title)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-slate-900 block truncate">{getText(item.title)}</span>
+                          {item.isPast ? (
+                            <span className="bg-slate-100 text-slate-700 font-bold text-[8px] px-1.5 py-0.5 rounded border border-slate-200 uppercase shrink-0">
+                              {language === 'ar' ? 'فعالية سابقة' : 'Geçmiş'}
+                            </span>
+                          ) : (
+                            <span className="bg-emerald-50 text-emerald-700 font-bold text-[8px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase shrink-0">
+                              {language === 'ar' ? 'فعالية قادمة' : 'Gelecek'}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400 block mt-0.5">{item.date} | {getText(item.location)}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 select-none">

@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
@@ -107,6 +108,44 @@ async function startServer() {
 
   app.use(express.json({ limit: '20mb' }));
   app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+
+  // API Routes for persisting custom portal data
+  app.get('/api/site-data', (req, res) => {
+    try {
+      const filePath = path.join(process.cwd(), 'site-data.json');
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const parsed = JSON.parse(content);
+        return res.json({ success: true, siteData: parsed });
+      }
+      return res.json({ success: true, siteData: null });
+    } catch (err) {
+      console.error('Error reading site-data.json:', err);
+      res.status(500).json({ success: false, error: 'Failed to read site data' });
+    }
+  });
+
+  app.post('/api/site-data', (req, res) => {
+    try {
+      const updates = req.body;
+      const filePath = path.join(process.cwd(), 'site-data.json');
+      let currentData: any = {};
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        try {
+          currentData = JSON.parse(content);
+        } catch (e) {
+          console.error('Failed to parse existing site-data.json:', e);
+        }
+      }
+      const mergedData = { ...currentData, ...updates };
+      fs.writeFileSync(filePath, JSON.stringify(mergedData, null, 2), 'utf8');
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error saving site-data.json:', err);
+      res.status(500).json({ success: false, error: 'Failed to save site data' });
+    }
+  });
 
   // API Route to fetch actual İSTE news via Gemini Search Grounding
   app.get('/api/university-news', async (req, res) => {
