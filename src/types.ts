@@ -53,6 +53,15 @@ export interface CourseItem {
   driveFolders?: DriveFolder[]; // Organized folder hierarchy
   year?: MultilingualText;
   semester?: MultilingualText;
+  registrations?: Array<{ 
+    name: string; 
+    studentId: string; 
+    phone: string; 
+    email: string; 
+    firstName?: string; 
+    lastName?: string; 
+    major?: string; 
+  }>;
 }
 
 export interface ActivityItem {
@@ -66,7 +75,15 @@ export interface ActivityItem {
   registrationEnabled: boolean;
   registeredCount: number;
   maxSeats?: number;
-  registrations?: Array<{ name: string; studentId: string; phone: string; email: string }>;
+  registrations?: Array<{ 
+    name: string; 
+    studentId: string; 
+    phone: string; 
+    email: string; 
+    firstName?: string; 
+    lastName?: string; 
+    major?: string; 
+  }>;
   isPast?: boolean;
 }
 

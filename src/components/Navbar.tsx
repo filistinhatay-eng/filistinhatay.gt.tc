@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { Globe, Lock, LayoutDashboard, LogOut, Award, Menu, X, Bell, BookOpen, Home, Newspaper, Link, Compass, Calendar } from 'lucide-react';
+import { Globe, Lock, LayoutDashboard, LogOut, Award, Menu, X, Bell, BookOpen, Home, Newspaper, Link, Compass, Calendar, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import logoImg from '../assets/images/logo.jpeg';
@@ -39,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'activities', label: t('activities'), icon: <Calendar className="w-4 h-4" /> },
     { id: 'pastActivities', label: t('pastActivities'), icon: <Award className="w-4 h-4" /> },
     { id: 'university', label: t('university'), icon: <Compass className="w-4 h-4" /> },
+    { id: 'residency', label: t('residency'), icon: <Fingerprint className="w-4 h-4" /> },
   ];
 
   const handleTabClick = (tabId: string) => {
