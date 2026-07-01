@@ -150,6 +150,25 @@ const translations = {
     confirmDelete: "هل أنت متأكد من عملية الحذف؟ لا يمكن التراجع عن هذا الإجراء.",
     fileAttachmentPlaceholder: "اكتب اسم الملف أو ارفع ملفاً تجريبياً (PDF)...",
     
+    // New fields & share button translations (Arabic)
+    firstName: "الاسم الأول",
+    lastName: "اسم العائلة",
+    major: "التخصص الدراسي",
+    share: "مشاركة",
+    copyLink: "نسخ الرابط",
+    linkCopied: "تم نسخ الرابط بنجاح!",
+    courseRegistration: "التسجيل في المادة / الدرس",
+    registerInCourse: "سجل حضورك في هذا الدرس",
+    registeredCourseSuccess: "تهانينا! تم تسجيل حضورك في هذا الدرس بنجاح.",
+    registeredCourseListTitle: "قائمة الطلاب المسجلين لحضور هذا الدرس",
+    viewRegistrants: "عرض الطلاب المسجلين",
+    shareAfterReg: "مشاركة الحدث مع زملائك",
+    firstNameRequired: "الاسم الأول مطلوب",
+    lastNameRequired: "اسم العائلة مطلوب",
+    emailRequired: "البريد الإلكتروني مطلوب",
+    phoneRequired: "رقم الهاتف مطلوب",
+    majorRequired: "التخصص الدراسي مطلوب",
+
     // Toast Messages
     actionSuccess: "تمت العملية بنجاح!",
     actionDeleted: "تم الحذف بنجاح!",
@@ -298,6 +317,25 @@ const translations = {
     noRegistrationsYet: "Bu etkinlik için henüz kayıt yaptıran öğrenci bulunmamaktadır.",
     confirmDelete: "Bu öğeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     fileAttachmentPlaceholder: "Dosya adı yazın veya demo yükleme yapın (PDF)...",
+
+    // New fields & share button translations (Turkish)
+    firstName: "Ad",
+    lastName: "Soyad",
+    major: "Bölüm / Uzmanlık",
+    share: "Paylaş",
+    copyLink: "Bağlantıyı Kopyala",
+    linkCopied: "Bağlantı başarıyla kopyalandı!",
+    courseRegistration: "Ders Katılım Kaydı",
+    registerInCourse: "Bu Derse Katılımını Kaydet",
+    registeredCourseSuccess: "Tebrikler! Bu derse katılım kaydınız başarıyla tamamlandı.",
+    registeredCourseListTitle: "Bu Derse Katılım Kaydı Yaptıran Öğrencilerin Listesi",
+    viewRegistrants: "Kayıtlı Öğrencileri Görüntüle",
+    shareAfterReg: "Etkinliği Arkadaşlarınla Paylaş",
+    firstNameRequired: "Ad alanı zorunludur",
+    lastNameRequired: "Soyad alanı zorunludur",
+    emailRequired: "E-posta zorunludur",
+    phoneRequired: "Telefon numarası zorunludur",
+    majorRequired: "Bölüm alanı zorunludur",
 
     // Toast Messages
     actionSuccess: "İşlem başarıyla gerçekleştirildi!",

@@ -353,7 +353,18 @@ function AppMain() {
   };
 
   // STUDENT OPERATION: REGISTER FOR AN EVENT
-  const handleRegisterForActivity = (activityId: string, regData: { name: string; studentId: string; phone: string; email: string }): boolean => {
+  const handleRegisterForActivity = (
+    activityId: string, 
+    regData: { 
+      name: string; 
+      studentId: string; 
+      phone: string; 
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      major?: string;
+    }
+  ): boolean => {
     let success = false;
     const updatedActs = activities.map(act => {
       if (act.id === activityId) {
@@ -373,6 +384,38 @@ function AppMain() {
 
     if (success) {
       updateActivitiesState(updatedActs);
+    }
+    return success;
+  };
+
+  // STUDENT OPERATION: REGISTER FOR A COURSE/LESSON
+  const handleRegisterForCourse = (
+    courseId: string,
+    regData: {
+      name: string;
+      studentId: string;
+      phone: string;
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      major?: string;
+    }
+  ): boolean => {
+    let success = false;
+    const updatedCourses = courses.map(course => {
+      if (course.id === courseId) {
+        success = true;
+        const currentRegs = course.registrations || [];
+        return {
+          ...course,
+          registrations: [regData, ...currentRegs]
+        };
+      }
+      return course;
+    });
+
+    if (success) {
+      updateCoursesState(updatedCourses);
     }
     return success;
   };
@@ -415,7 +458,7 @@ function AppMain() {
       case 'links':
         return <ImportantLinks links={links} />;
       case 'courses':
-        return <CoursesSection courses={courses} />;
+        return <CoursesSection courses={courses} registerForCourse={handleRegisterForCourse} />;
       case 'deptAnnouncements':
         return <DeptAnnouncementsSection announcements={deptAnnouncements} />;
       case 'activities':
