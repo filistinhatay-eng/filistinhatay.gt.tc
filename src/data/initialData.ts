@@ -1,4 +1,4 @@
-import { NewsItem, CourseItem, ActivityItem, ImportantLink, UniversityInfo, TopAnnouncement, DeptAnnouncementItem, UniversityNewsItem } from '../types';
+import { NewsItem, CourseItem, ActivityItem, ImportantLink, UniversityInfo, TopAnnouncement, DeptAnnouncementItem, UniversityNewsItem, DirectoryMember } from '../types';
 
 export const initialNews: NewsItem[] = [
   {
@@ -669,63 +669,85 @@ export const initialDeptAnnouncements: DeptAnnouncementItem[] = [
 
 export const initialUniversityNews: UniversityNewsItem[] = [
   {
-    id: 'iste-news-fallback-1',
-    titleTr: 'Uluslararası Öğrenci Başvuruları Başladı!',
-    titleAr: 'بدء استقبال طلبات الطلاب الدوليين في جامعة İSTE!',
-    contentTr: 'İskenderun Teknik Üniversitesi 2026-2027 akademik yılı uluslararası öğrenci başvuru süreci resmi olarak başlamıştır. Adaylar online sistem üzerinden belgelerini teslim edebilirler.',
-    contentAr: 'بدأت رسمياً عملية تقديم طلبات الطلاب الدوليين في جامعة إسكندرون التقنية للعام الدراسي 2026-2027. يمكن للمرشحين تقديم وثائقهم عبر النظام الإلكتروني مباشرة.',
-    date: '2026-06-20',
-    categoryTr: 'Uluslararası',
-    categoryAr: 'شؤون دولية',
-    link: 'https://iste.edu.tr/duyuru/uluslararasi-ogrenci-basvurulari-basladi',
+    id: 'iste-live-2026-08-14-1',
+    titleTr: 'İSKENDERUN TEKNİK ÜNİVERSİTESİ 2026-2027 EĞİTİM-ÖĞRETİM YILI ÖN LİSANS VE LİSANS DÜZEYİNDE 2. ULUSLARARASI ÖĞRENCİ ALIM İLANI',
+    titleAr: 'إعلان القبول الثاني للطلاب الدوليين لدرجتي الدبلوم والبكالوريوس للعام الدراسي 2026-2027',
+    contentTr: 'Üniversitemiz ön lisans ve lisans programlarına, 2025 veya 2026 yılında yapılmış olan ÖSYM Türkiye Yurt Dışından Öğrenci Kabul Sınavı (TR-YÖS) sınavının sonuçlarına göre uluslararası öğrenci alınacaktır. Başvurular online sistem üzerinden alınacaktır.',
+    contentAr: 'أعلنت جامعة إسكندرون التقنية عن فتح باب القبول الثاني للطلاب الدوليين في برامج الدبلوم والبكالوريوس بناءً على نتائج اختبار TR-YÖS لعامي 2025 أو 2026. يتم التقديم إلكترونياً عبر بوابة التسجيل الرسمية.',
+    date: '2026-08-14',
+    categoryTr: 'Öğrenci İşleri',
+    categoryAr: 'شؤون الطلاب والقبول',
+    link: 'https://iste.edu.tr/duyuru-merkezi/oidb/2026/08/14/6853',
     isRelevantToForeigners: true
   },
   {
-    id: 'iste-news-fallback-2',
-    titleTr: 'Erasmus+ Öğrenim ve Staj Hareketliliği Sonuçları Açıklandı',
-    titleAr: 'إعلان نتائج منح التبادل الطلابي والتدريب Erasmus+',
-    contentTr: 'Dış İlişkiler Koordinatörlüğü tarafından yürütülen Erasmus+ programı öğrenim ve staj hareketliliği başvuru sonuçları öğrenci bilgi sisteminde ilan edilmiştir.',
-    contentAr: 'أعلن مكتب العلاقات الخارجية عن نتائج طلبات برنامج التبادل الدراسي والتدريب المهني Erasmus+ على نظام معلومات الطلاب.',
-    date: '2026-06-18',
-    categoryTr: 'Duyuru',
-    categoryAr: 'إعلان',
-    link: 'https://iste.edu.tr/duyuru/erasmus-sonuclari-aciklandi',
+    id: 'iste-live-2026-08-14-2',
+    titleTr: 'Af Başvurusunda Bulunacak Öğrencilerin Dikkatine (Geçici 85. Madde)',
+    titleAr: 'تنبيه هام للطلاب الراغبين في التقديم على العفو الطلابي وإعادة القيد (المادة 85)',
+    contentTr: '2547 Sayılı Yükseköğretim Kanunu\'nun Geçici 85. Maddesi kapsamında yeniden öğrenim hakkı; 9 Ağustos 2026 tarihli Resmi Gazete\'de yayımlanarak yürürlüğe girmiştir. Başvurular enstitü müdürlüklerine yapılacaktır.',
+    contentAr: 'تم تفعيل حق إعادة الدراسة بموجب المادة المؤقتة 85 من قانون التعليم العالي رقم 2547 الصادر في الجريدة الرسمية بتاريخ 9 أغسطس 2026. يمكن للطلاب المفصولين والمنقطعين التقديم لدى إدارة الكليات والمعاهد.',
+    date: '2026-08-14',
+    categoryTr: 'Lisansüstü / Öğrenci İşleri',
+    categoryAr: 'دراسات عليا وشؤون الطلاب',
+    link: 'https://www.iste.edu.tr/duyuru-merkezi/lee/2026/08/14/6855',
     isRelevantToForeigners: true
   },
   {
-    id: 'iste-news-fallback-3',
-    titleTr: 'Yabancı Uyruklu Öğrenciler İçin Türkçe Yeterlilik Sınavı',
-    titleAr: 'امتحان كفاءة اللغة التركية للطلاب الأجانب (TÖMER)',
-    contentTr: 'İSTE TÖMER bünyesinde yeni kayıt yaptıran yabancı uyruklu öğrenciler için Türkçe Yeterlilik Muafiyet Sınavı 1 Temmuz 2026 tarihinde yapılacaktır.',
-    contentAr: 'سيعقد امتحان الإعفاء وكفاءة اللغة التركية للطلاب الأجانب المسجلين حديثاً في مركز TÖMER بجامعة İSTE في تاريخ 1 يوليو 2026.',
-    date: '2026-06-15',
-    categoryTr: 'Sınav Duyuruları',
-    categoryAr: 'إعلانات الامتحانات',
-    link: 'https://iste.edu.tr/duyuru/tomer-muafiyet-sinavi',
-    isRelevantToForeigners: true
-  },
-  {
-    id: 'iste-news-fallback-4',
-    titleTr: 'Mühendislik Fakültesi Akreditasyon Başarısı',
-    titleAr: 'نجاح اعتماد كلية الهندسة بجامعة إسكندرون التقنية',
-    contentTr: 'Mühendislik ve Doğa Bilimleri Fakültesi bünyesindeki Bilgisayar, Elektrik-Elektronik ve İnşaat Mühendisliği bölümleri MÜDEK tarafından akredite edilmiştir.',
-    contentAr: 'تم اعتماد أقسام هندسة الكمبيوتر، الهندسة الكهربائية والإلكترونية، والهندسة المدنية في كلية الهندسة والعلوم الطبيعية من قبل جمعية تقييم واعتماد البرامج الهندسية MÜDEK.',
-    date: '2026-06-10',
-    categoryTr: 'Haber',
-    categoryAr: 'أخبار',
-    link: 'https://iste.edu.tr/haber/muhendislik-akreditasyon-basarisi',
+    id: 'iste-live-2026-08-03-3',
+    titleTr: '2026 YKS Sonuçlarına Göre Yeni Kayıt Yaptıracak Öğrencilerimizin Dikkatine',
+    titleAr: 'توجيهات وإرشادات التسجيل للطلبة الجدد المقبولين في جامعة إسكندرون التقنية',
+    contentTr: 'Bizi İSTE\'yen ve Tercih Eden Sevgili Öğrencilerimiz, İSTE Ailesine Hoş Geldiniz. 2026 yılı YKS sonuçlarına göre Üniversitemize yerleşen adayların e-devlet üzerinden veya şahsen kayıt tarihleri açıklanmıştır.',
+    contentAr: 'ترحب جامعة إسكندرون بالطلبة الجدد. تم الإعلان عن مواعيد وإجراءات تثبيت القيد والتسجيل الإلكتروني عبر بوابة e-Devlet والتسجيل الحضوري للعام الدراسي الجديد.',
+    date: '2026-08-03',
+    categoryTr: 'Öğrenci İşleri',
+    categoryAr: 'شؤون الطلاب والتسجيل',
+    link: 'https://iste.edu.tr/duyuru-merkezi/oidb/2026/08/03/6814',
     isRelevantToForeigners: false
   },
   {
-    id: 'iste-news-fallback-5',
-    titleTr: 'Teknofest Başvurularında İSTE Projelerine Büyük İlgi',
-    titleAr: 'اهتمام كبير بمشاريع جامعة İSTE في طلبات تكنوفست',
-    contentTr: 'Türkiye\'nin en büyük teknoloji festivali Teknofest\'e bu yıl İSTE öğrencilerinden rekor sayıda proje başvurusu yapıldı. Takımlarımıza başarılar dileriz.',
-    contentAr: 'تم تسجيل رقم قياسي في عدد طلبات المشاريع المقدمة من طلاب جامعة İSTE في مهرجان التكنولوجيا الأكبر في تركيا تكنوفست Teknofest هذا العام. نتمنى التوفيق لفرقنا.',
-    date: '2026-06-05',
-    categoryTr: 'Haber',
-    categoryAr: 'أخبار',
-    link: 'https://iste.edu.tr/haber/teknofest-rekordu',
-    isRelevantToForeigners: false
+    id: 'iste-live-2026-08-04-4',
+    titleTr: 'Yabancı Diller Yüksekokulu Muafiyet ve Yeterlilik Sınavı Takvimi',
+    titleAr: 'جدول امتحانات الإعفاء وتحديد المستوى في مدرسة اللغات الأجنبية',
+    contentTr: '2026-2027 Eğitim Öğretim Yılı Güz Yarıyılı Zorunlu Yabancı Dil Hazırlık Sınıfı Yeterlilik ve Muafiyet Sınavı takvimi ilan edilmiştir.',
+    contentAr: 'تم الإعلان عن جدول ومواعيد امتحانات الكفاءة والإعفاء من السنة التحضيرية للغات الأجنبية للفصل الدراسي الخريفي 2026-2027.',
+    date: '2026-08-04',
+    categoryTr: 'Yabancı Diller',
+    categoryAr: 'اللغات الأجنبية والتحضيري',
+    link: 'https://iste.edu.tr/duyuru-merkezi/mydk/2026/08/04/6817',
+    isRelevantToForeigners: true
+  }
+];
+
+export const initialDirectoryMembers: DirectoryMember[] = [
+  {
+    id: "member-1",
+    name: {
+      ar: "عبد الرحمن أبو دقة",
+      tr: "Abdelrahman Abu Daqqa"
+    },
+    major: {
+      ar: "هندسة الكمبيوتر والبرمجيات",
+      tr: "Bilgisayar Mühendisliği"
+    },
+    category: {
+      ar: "الهيئة الإدارية",
+      tr: "Yönetim Kurulu"
+    },
+    roleTitle: {
+      ar: "رئيس تجمع الطلاب الفلسطينيين",
+      tr: "Topluluk Başkanı"
+    },
+    academicYear: {
+      ar: "سنة رابعة",
+      tr: "4. Sınıf"
+    },
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+    email: "filistin.hatay@gmail.com",
+    phone: "+90 552 000 00 00",
+    linkedin: "https://linkedin.com",
+    bio: {
+      ar: "مهتم بالأنظمة السحابية والذكاء الاصطناعي، ومسؤول عن تنسيق أنشطة التجمع والربط الأكاديمي مع الجامعة.",
+      tr: "Bulut sistemleri ve yapay zeka ile ilgileniyor, topluluk etkinlikleri ve üniversite ile akademik koordinasyondan sorumlu."
+    }
   }
 ];
