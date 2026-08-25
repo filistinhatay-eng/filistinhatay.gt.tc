@@ -3,24 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { HomePage } from './components/HomePage';
-import { NewsSection } from './components/NewsSection';
 import { ImportantLinks } from './components/ImportantLinks';
-import { CoursesSection } from './components/CoursesSection';
-import { ActivitiesSection } from './components/ActivitiesSection';
-import { PastActivitiesSection } from './components/PastActivitiesSection';
-import { UniversityInfoSection } from './components/UniversityInfoSection';
-import { ResidencySection } from './components/ResidencySection';
-import { AdminPanel } from './components/AdminPanel';
 import { LoginModal } from './components/LoginModal';
-import { DeptAnnouncementsSection } from './components/DeptAnnouncementsSection';
-import { DirectorySection } from './components/DirectorySection';
+
+// Dynamic lazy-loaded components for optimal bundle splitting
+const NewsSection = lazy(() => import('./components/NewsSection').then(m => ({ default: m.NewsSection })));
+const CoursesSection = lazy(() => import('./components/CoursesSection').then(m => ({ default: m.CoursesSection })));
+const ActivitiesSection = lazy(() => import('./components/ActivitiesSection').then(m => ({ default: m.ActivitiesSection })));
+const PastActivitiesSection = lazy(() => import('./components/PastActivitiesSection').then(m => ({ default: m.PastActivitiesSection })));
+const UniversityInfoSection = lazy(() => import('./components/UniversityInfoSection').then(m => ({ default: m.UniversityInfoSection })));
+const ResidencySection = lazy(() => import('./components/ResidencySection').then(m => ({ default: m.ResidencySection })));
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
+const DeptAnnouncementsSection = lazy(() => import('./components/DeptAnnouncementsSection').then(m => ({ default: m.DeptAnnouncementsSection })));
+const DirectorySection = lazy(() => import('./components/DirectorySection').then(m => ({ default: m.DirectorySection })));
+
 // @ts-ignore
 import logoImg from './assets/images/logo.jpeg';
 
@@ -637,7 +640,16 @@ function AppMain() {
 
       {/* Main Page Canvas Stage */}
       <main id="app-main-content-stage" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {renderActiveSection()}
+        <Suspense fallback={
+          <div className="flex flex-col items-center justify-center min-h-[350px] py-12">
+            <div className="w-10 h-10 border-3 border-emerald-600 dark:border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="mt-4 text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+              {t('loading') || 'جارٍ التحميل...'}
+            </span>
+          </div>
+        }>
+          {renderActiveSection()}
+        </Suspense>
       </main>
 
       {/* Shared Footer component */}
