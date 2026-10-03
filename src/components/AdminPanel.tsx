@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { NewsItem, CourseItem, DeptAnnouncementItem, ActivityItem, ImportantLink, UniversityInfo, TopAnnouncement } from '../types';
+import { NewsItem, CourseItem, DeptAnnouncementItem, ActivityItem, ImportantLink, UniversityInfo, TopAnnouncement, DirectoryMember } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { 
   Plus, Edit2, Trash2, Save, FileText, Newspaper, BookOpen, Bell,
-  Ticket, Link2, Building2, Megaphone, CheckCircle2, AlertTriangle, Users, Eye 
+  Ticket, Link2, Building2, Megaphone, CheckCircle2, AlertTriangle, Users, Eye, Crop, GraduationCap, Tag, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ImageCropperModal } from './ImageCropperModal';
 // @ts-ignore
 import logoImg from '../assets/images/logo.jpeg';
 
@@ -39,11 +40,16 @@ interface AdminPanelProps {
   
   onSaveAnn: (item: TopAnnouncement) => void;
   onDeleteAnn: (id: string) => void;
+
+  directoryMembers?: DirectoryMember[];
+  onSaveDirectoryMember?: (item: DirectoryMember) => void;
+  onDeleteDirectoryMember?: (id: string) => void;
+
   assistants: any[];
   onSaveAssistants: (updated: any[]) => void;
 }
 
-type AdminTab = 'news' | 'courses' | 'deptAnnouncements' | 'activities' | 'links' | 'univ' | 'announcements' | 'logo' | 'assistants';
+type AdminTab = 'news' | 'directory' | 'courses' | 'deptAnnouncements' | 'activities' | 'links' | 'univ' | 'announcements' | 'logo' | 'assistants';
 
 const DEFAULT_FACULTIES = [
   {
@@ -105,6 +111,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSaveLink, onDeleteLink,
   onSaveUnivInfo,
   onSaveAnn, onDeleteAnn,
+  directoryMembers = [],
+  onSaveDirectoryMember,
+  onDeleteDirectoryMember,
   assistants: propsAssistants,
   onSaveAssistants
 }) => {
@@ -175,6 +184,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Editing states (null means creating new or not editing, otherwise holds the item being edited)
   const [editNewsItem, setEditNewsItem] = useState<Partial<NewsItem> | null>(null);
+  const [editDirectoryMemberItem, setEditDirectoryMemberItem] = useState<Partial<DirectoryMember> | null>(null);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [editCourseItem, setEditCourseItem] = useState<Partial<CourseItem> | null>(null);
   const [editDeptAnnItem, setEditDeptAnnItem] = useState<Partial<DeptAnnouncementItem> | null>(null);
   const [editActivityItem, setEditActivityItem] = useState<Partial<ActivityItem> | null>(null);
@@ -201,9 +212,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }, 3000);
   };
 
+  // Image Cropping Modal State
+  const [cropModalState, setCropModalState] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    onCropComplete: (croppedDataUrl: string) => void;
+    aspectRatioPreset?: 'free' | '16:9' | '4:3' | '1:1' | '3:2';
+    title?: string;
+  }>({
+    isOpen: false,
+    imageSrc: '',
+    onCropComplete: () => {},
+    aspectRatioPreset: 'free',
+    title: ''
+  });
+
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setter: (imgUrl: string) => void
+    setter: (imgUrl: string) => void,
+    preset: 'free' | '16:9' | '4:3' | '1:1' | '3:2' = 'free',
+    customTitle?: string
   ) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -211,51 +239,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
           const originalBase64 = reader.result;
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-
-              // Target maximum dimension for web display (800px)
-              const maxDimension = 800;
-              if (width > maxDimension || height > maxDimension) {
-                if (width > height) {
-                  height = Math.round((height * maxDimension) / width);
-                  width = maxDimension;
-                } else {
-                  width = Math.round((width * maxDimension) / height);
-                  height = maxDimension;
-                }
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-                // Compress to JPEG format with 0.7 quality
-                // This reduces multi-megabyte files down to ~30KB - 80KB!
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                setter(compressedDataUrl);
-              } else {
-                setter(originalBase64);
-              }
-            } catch (err) {
-              console.error('Image compression failed, falling back to original:', err);
-              setter(originalBase64);
-            }
-          };
-          img.onerror = () => {
-            setter(originalBase64);
-          };
-          img.src = originalBase64;
+          // Open cropping modal to let the user select/crop the desired portion
+          setCropModalState({
+            isOpen: true,
+            imageSrc: originalBase64,
+            onCropComplete: setter,
+            aspectRatioPreset: preset,
+            title: customTitle
+          });
         }
       };
       reader.readAsDataURL(file);
+      // Reset input value so re-selecting same file triggers onChange
+      e.target.value = '';
     }
+  };
+
+  const handleOpenCropperForExisting = (
+    imageSrc: string,
+    setter: (imgUrl: string) => void,
+    preset: 'free' | '16:9' | '4:3' | '1:1' | '3:2' = 'free',
+    customTitle?: string
+  ) => {
+    if (!imageSrc) return;
+    setCropModalState({
+      isOpen: true,
+      imageSrc: imageSrc,
+      onCropComplete: setter,
+      aspectRatioPreset: preset,
+      title: customTitle
+    });
   };
 
   // NEWS CRUD
@@ -287,6 +300,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleDeleteNews = (id: string) => {
     if (window.confirm(t('confirmDelete'))) {
       onDeleteNews(id);
+      triggerToast(t('actionDeleted'));
+    }
+  };
+
+  // DIRECTORY MEMBERS CRUD
+  const PRESET_MEMBER_CATEGORIES = [
+    { ar: "الهيئة الإدارية", tr: "Yönetim Kurulu" },
+    { ar: "ممثلو الأقسام", tr: "Bölüm Temsilcileri" },
+    { ar: "الطلاب المتميزون", tr: "Başarılı Öğrenciler" },
+    { ar: "الخريجون", tr: "Mezunlar" },
+    { ar: "متطوعون ولجان", tr: "Gönüllüler ve Komiteler" },
+    { ar: "طلاب البكالوريوس", tr: "Lisans Öğrencileri" },
+    { ar: "دراسات عليا", tr: "Lisansüstü Öğrencileri" }
+  ];
+
+  const handleStartEditDirectoryMember = (item?: DirectoryMember) => {
+    if (item) {
+      setEditDirectoryMemberItem(JSON.parse(JSON.stringify(item)));
+    } else {
+      setEditDirectoryMemberItem({
+        id: `member-${Date.now()}`,
+        name: { ar: '', tr: '' },
+        major: { ar: '', tr: '' },
+        category: { ar: 'ممثلو الأقسام', tr: 'Bölüm Temsilcileri' },
+        roleTitle: { ar: '', tr: '' },
+        academicYear: { ar: '', tr: '' },
+        image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600',
+        email: '',
+        phone: '',
+        linkedin: '',
+        bio: { ar: '', tr: '' }
+      });
+    }
+  };
+
+  const handleSaveDirectoryMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDirectoryMemberItem || !editDirectoryMemberItem.id) return;
+    if (onSaveDirectoryMember) {
+      onSaveDirectoryMember(editDirectoryMemberItem as DirectoryMember);
+    }
+    setEditDirectoryMemberItem(null);
+    triggerToast(t('actionSuccess'));
+  };
+
+  const handleDeleteDirectoryMember = (id: string) => {
+    if (window.confirm(t('confirmDelete'))) {
+      if (onDeleteDirectoryMember) {
+        onDeleteDirectoryMember(id);
+      }
       triggerToast(t('actionDeleted'));
     }
   };
@@ -660,6 +723,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const tabs: Array<{ id: AdminTab; label: string; icon: React.ReactNode }> = [
     { id: 'news', label: t('tabNews'), icon: <Newspaper className="w-4 h-4" /> },
+    { id: 'directory', label: language === 'ar' ? 'دليل وبطاقات الطلاب' : 'Öğrenci Kartları', icon: <Users className="w-4 h-4" /> },
     { id: 'courses', label: t('tabCourses'), icon: <BookOpen className="w-4 h-4" /> },
     { id: 'deptAnnouncements', label: t('tabDeptAnnouncements'), icon: <Bell className="w-4 h-4" /> },
     { id: 'activities', label: t('tabActivities'), icon: <Ticket className="w-4 h-4" /> },
@@ -712,6 +776,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               setActiveTab(tab.id);
               // reset internal forms
               setEditNewsItem(null);
+              setEditDirectoryMemberItem(null);
               setEditCourseItem(null);
               setEditDeptAnnItem(null);
               setEditActivityItem(null);
@@ -821,13 +886,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         className="flex-1 p-2 border border-slate-200 rounded-lg text-xs"
                         placeholder="https://..."
                       />
-                      <label className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold px-3 py-2 rounded-lg cursor-pointer text-center flex items-center justify-center text-xs shrink-0 select-none">
-                        <span>{language === 'ar' ? 'رفع صورة' : 'Fotoğraf Yükle'}</span>
+                      {editNewsItem.image && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCropperForExisting(
+                            editNewsItem.image!,
+                            (url) => setEditNewsItem({ ...editNewsItem, image: url }),
+                            '16:9',
+                            language === 'ar' ? 'اقتصاص صورة الخبر' : 'Haber Görselini Kırp'
+                          )}
+                          className="px-2.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shrink-0 transition"
+                          title={language === 'ar' ? 'قص / تعديل الصورة' : 'Kırp / Düzenle'}
+                        >
+                          <Crop className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{language === 'ar' ? 'قص' : 'Kırp'}</span>
+                        </button>
+                      )}
+                      <label className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold px-3 py-2 rounded-lg cursor-pointer text-center flex items-center justify-center text-xs shrink-0 select-none gap-1">
+                        <Crop className="w-3.5 h-3.5 text-red-600" />
+                        <span>{language === 'ar' ? 'رفع وقص' : 'Yükle & Kırp'}</span>
                         <input
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => handleImageUpload(e, (url) => setEditNewsItem({ ...editNewsItem, image: url }))}
+                          onChange={(e) => handleImageUpload(
+                            e, 
+                            (url) => setEditNewsItem({ ...editNewsItem, image: url }),
+                            '16:9',
+                            language === 'ar' ? 'اقتصاص وتحديد صورة الخبر' : 'Haber Görselini Kırp'
+                          )}
                         />
                       </label>
                     </div>
@@ -873,7 +960,511 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
 
-        {/* 2. COURSES TAB */}
+        {/* DIRECTORY / MEMBERS TAB */}
+        {activeTab === 'directory' && (
+          <div id="admin-tab-directory-content">
+            {editDirectoryMemberItem ? (
+              <form onSubmit={handleSaveDirectoryMember} className="space-y-4 text-xs">
+                <div className="border-b border-slate-100 pb-2 mb-2 flex justify-between items-center select-none">
+                  <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-red-600" />
+                    <span>
+                      {editDirectoryMemberItem.name?.ar ? (language === 'ar' ? 'تعديل بطاقة عضو/طالب' : 'Kartı Düzenle') : (language === 'ar' ? 'إضافة بطاقة جديدة' : 'Yeni Kart Ekle')}
+                    </span>
+                  </h3>
+                  <button type="button" onClick={() => setEditDirectoryMemberItem(null)} className="text-slate-400 hover:text-slate-600">&times;</button>
+                </div>
+
+                {/* 1. Name */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'الاسم الكامل (بالعربية)' : 'Tam İsim (Arapça)'} *
+                    </label>
+                    <input
+                      id="member-form-name-ar"
+                      type="text" required
+                      value={editDirectoryMemberItem.name?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        name: { ...editDirectoryMemberItem.name!, ar: e.target.value }
+                      })}
+                      placeholder="مثال: أحمد عبد الله"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'الاسم الكامل (بالتركية / اللاتينية)' : 'Tam İsim (Türkçe)'} *
+                    </label>
+                    <input
+                      id="member-form-name-tr"
+                      type="text" required
+                      value={editDirectoryMemberItem.name?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        name: { ...editDirectoryMemberItem.name!, tr: e.target.value }
+                      })}
+                      placeholder="Örn: Ahmet Abdullah"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Major & Specialization */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'التخصص الدراسي (بالعربية)' : 'Bölüm / Uzmanlık (Arapça)'} *
+                    </label>
+                    <input
+                      id="member-form-major-ar"
+                      type="text" required
+                      value={editDirectoryMemberItem.major?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        major: { ...editDirectoryMemberItem.major!, ar: e.target.value }
+                      })}
+                      placeholder="مثال: هندسة الكمبيوتر"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'التخصص الدراسي (بالتركية)' : 'Bölüm / Uzmanlık (Türkçe)'} *
+                    </label>
+                    <input
+                      id="member-form-major-tr"
+                      type="text" required
+                      value={editDirectoryMemberItem.major?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        major: { ...editDirectoryMemberItem.major!, tr: e.target.value }
+                      })}
+                      placeholder="Örn: Bilgisayar Mühendisliği"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick department picker for Major */}
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-600 block">
+                    {language === 'ar' ? 'اختيار سريع للتخصص من أقسام جامعة İSTE:' : 'İSTE Bölümlerinden Hızlı Doldur:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DEFAULT_FACULTIES.flatMap(f => f.departments).slice(0, 8).map((dept, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setEditDirectoryMemberItem({
+                          ...editDirectoryMemberItem,
+                          major: { ar: dept.ar, tr: dept.tr }
+                        })}
+                        className="px-2 py-1 text-[10px] font-medium bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 rounded transition"
+                      >
+                        {getText(dept)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Category / Classification */}
+                <div className="space-y-2">
+                  <label className="block font-bold text-slate-700">
+                    {language === 'ar' ? 'التصنيف / الفئة' : 'Kategori / Sınıflandırma'} *
+                  </label>
+
+                  {/* Preset Category Buttons */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_MEMBER_CATEGORIES.map((preset, idx) => {
+                      const isSelected = editDirectoryMemberItem.category?.ar === preset.ar;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setEditDirectoryMemberItem({
+                            ...editDirectoryMemberItem,
+                            category: { ar: preset.ar, tr: preset.tr }
+                          })}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
+                            isSelected 
+                              ? 'bg-red-700 text-white' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          {getText(preset)}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Category Input */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <input
+                      id="member-form-category-ar"
+                      type="text" required
+                      value={editDirectoryMemberItem.category?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        category: { ...editDirectoryMemberItem.category!, ar: e.target.value }
+                      })}
+                      placeholder={language === 'ar' ? 'التصنيف بالعربية (أو اكتب مخصصاً)' : 'Kategori (Arapça)'}
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                    <input
+                      id="member-form-category-tr"
+                      type="text" required
+                      value={editDirectoryMemberItem.category?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        category: { ...editDirectoryMemberItem.category!, tr: e.target.value }
+                      })}
+                      placeholder={language === 'ar' ? 'التصنيف بالتركية' : 'Kategori (Türkçe)'}
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Photo / Image with Cropping Tool */}
+                <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <label className="block font-bold text-slate-700">
+                    {language === 'ar' ? 'الصورة الشخصية / صورة البطاقة' : 'Profil Görseli / Kart Resmi'}
+                  </label>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {/* Image Preview */}
+                    <div className="w-24 h-24 rounded-2xl bg-white border-2 border-dashed border-slate-300 overflow-hidden shrink-0 flex items-center justify-center relative group shadow-sm">
+                      {editDirectoryMemberItem.image ? (
+                        <>
+                          <img
+                            src={editDirectoryMemberItem.image}
+                            alt="Member Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleOpenCropperForExisting(
+                              editDirectoryMemberItem.image!,
+                              (url) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, image: url }),
+                              '1:1',
+                              language === 'ar' ? 'اقتصاص الصورة الشخصية' : 'Profil Görselini Kırp'
+                            )}
+                            className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition text-[10px] font-bold"
+                          >
+                            <Crop className="w-4 h-4 mb-0.5" />
+                            <span>{language === 'ar' ? 'قص' : 'Kırp'}</span>
+                          </button>
+                        </>
+                      ) : (
+                        <Users className="w-8 h-8 text-slate-300" />
+                      )}
+                    </div>
+
+                    {/* Inputs & Actions */}
+                    <div className="flex-1 space-y-2 w-full">
+                      <div className="flex gap-2">
+                        <input
+                          id="member-form-image-url"
+                          type="url"
+                          value={editDirectoryMemberItem.image || ''}
+                          onChange={(e) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, image: e.target.value })}
+                          placeholder={language === 'ar' ? 'رابط الصورة المباشر أو ارفع من جهازك...' : 'Görsel URL veya dosya yükleyin...'}
+                          className="flex-1 p-2 border border-slate-200 rounded-lg text-xs bg-white"
+                        />
+                        {editDirectoryMemberItem.image && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenCropperForExisting(
+                              editDirectoryMemberItem.image!,
+                              (url) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, image: url }),
+                              '1:1',
+                              language === 'ar' ? 'اقتصاص الصورة الشخصية' : 'Profil Görselini Kırp'
+                            )}
+                            className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shrink-0 transition shadow-sm"
+                          >
+                            <Crop className="w-3.5 h-3.5" />
+                            <span>{language === 'ar' ? 'قص الصورة' : 'Kırp'}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg cursor-pointer text-center flex items-center justify-center text-xs shrink-0 select-none gap-1.5 shadow-sm">
+                          <Crop className="w-3.5 h-3.5 text-red-600" />
+                          <span>{language === 'ar' ? 'رفع وقص صورة جديدة (1:1)' : 'Fotoğraf Yükle & Kırp'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(
+                              e, 
+                              (url) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, image: url }),
+                              '1:1',
+                              language === 'ar' ? 'اقتصاص وتحديد الصورة الشخصية' : 'Profil Fotoğrafını Kırp'
+                            )}
+                          />
+                        </label>
+                        <span className="text-[10px] text-slate-400">
+                          {language === 'ar' ? 'ميزة اختيار جزء واقتصاص الصورة مدعومة بالكامل' : 'Fotoğraf kırpma ve ölçekleme desteklenir'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Additional Optional Metadata */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'المسمى / الصفة (اختياري - عربي)' : 'Ünvan / Görev (Arapça)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editDirectoryMemberItem.roleTitle?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        roleTitle: { ...editDirectoryMemberItem.roleTitle!, ar: e.target.value }
+                      })}
+                      placeholder="مثال: ممثل كلية الهندسة / عضو لجنة"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'المسمى / الصفة (اختياري - تركي)' : 'Ünvan / Görev (Türkçe)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editDirectoryMemberItem.roleTitle?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        roleTitle: { ...editDirectoryMemberItem.roleTitle!, tr: e.target.value }
+                      })}
+                      placeholder="Örn: Mühendislik Temsilcisi"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'المرحلة / السنة الدراسية (عربي)' : 'Sınıf / Aşama (Arapça)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editDirectoryMemberItem.academicYear?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        academicYear: { ...editDirectoryMemberItem.academicYear!, ar: e.target.value }
+                      })}
+                      placeholder="مثال: سنة 3 / خريج / ماجستير"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'المرحلة / السنة الدراسية (تركي)' : 'Sınıf / Aşama (Türkçe)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editDirectoryMemberItem.academicYear?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        academicYear: { ...editDirectoryMemberItem.academicYear!, tr: e.target.value }
+                      })}
+                      placeholder="Örn: 3. Sınıf / Mezun"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 6. Bio */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'نبذة تعريفية (بالعربية)' : 'Hakkında (Arapça)'}
+                    </label>
+                    <textarea rows={2}
+                      value={editDirectoryMemberItem.bio?.ar || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        bio: { ...editDirectoryMemberItem.bio!, ar: e.target.value }
+                      })}
+                      placeholder="نبذة مختصرة عن الاهتمامات أو المهام..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">
+                      {language === 'ar' ? 'نبذة تعريفية (بالتركية)' : 'Hakkında (Türkçe)'}
+                    </label>
+                    <textarea rows={2}
+                      value={editDirectoryMemberItem.bio?.tr || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({
+                        ...editDirectoryMemberItem,
+                        bio: { ...editDirectoryMemberItem.bio!, tr: e.target.value }
+                      })}
+                      placeholder="Kısa biyografi..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 7. Contact Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">البريد الإلكتروني</label>
+                    <input
+                      type="email"
+                      value={editDirectoryMemberItem.email || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, email: e.target.value })}
+                      placeholder="example@iste.edu.tr"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">رقم الهاتف / الواتساب</label>
+                    <input
+                      type="text"
+                      value={editDirectoryMemberItem.phone || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, phone: e.target.value })}
+                      placeholder="+90 5XX XXX XX XX"
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-bold text-slate-700">رابط LinkedIn</label>
+                    <input
+                      type="url"
+                      value={editDirectoryMemberItem.linkedin || ''}
+                      onChange={(e) => setEditDirectoryMemberItem({ ...editDirectoryMemberItem, linkedin: e.target.value })}
+                      placeholder="https://linkedin.com/in/..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Form Action Buttons */}
+                <div className="flex gap-2 justify-end pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditDirectoryMemberItem(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold"
+                  >
+                    {t('cancelBtn')}
+                  </button>
+                  <button
+                    id="member-form-submit-btn"
+                    type="submit"
+                    className="px-5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg font-bold flex items-center gap-1.5 shadow"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{t('saveBtn')}</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Top Control Bar */}
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                  <div className="flex items-center gap-2 flex-1 max-w-md">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={memberSearchQuery}
+                        onChange={(e) => setMemberSearchQuery(e.target.value)}
+                        placeholder={language === 'ar' ? 'بحث بالاسم، التخصص أو التصنيف...' : 'İsim, bölüm veya kategori ara...'}
+                        className="w-full ps-8 pe-3 py-1.5 border border-slate-200 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    id="admin-add-member-btn"
+                    onClick={() => handleStartEditDirectoryMember()}
+                    className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{language === 'ar' ? 'إضافة بطاقة عضو/طالب جديدة' : 'Yeni Kart Ekle'}</span>
+                  </button>
+                </div>
+
+                {/* Cards List / Table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-150">
+                  {directoryMembers
+                    .filter(m => {
+                      if (!memberSearchQuery) return true;
+                      const q = memberSearchQuery.toLowerCase();
+                      return getText(m.name).toLowerCase().includes(q) ||
+                        getText(m.major).toLowerCase().includes(q) ||
+                        getText(m.category).toLowerCase().includes(q);
+                    })
+                    .map((item) => (
+                      <div id={`admin-member-row-${item.id}`} key={item.id} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 truncate">
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                            {item.image ? (
+                              <img src={item.image} alt={getText(item.name)} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                <Users className="w-5 h-5" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-slate-900 truncate">{getText(item.name)}</span>
+                              <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded font-bold shrink-0">
+                                {getText(item.category)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <GraduationCap className="w-3 h-3 text-red-600" />
+                                <span>{getText(item.major)}</span>
+                              </span>
+                              {item.academicYear?.ar && (
+                                <span>• {getText(item.academicYear)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0 select-none">
+                          <button
+                            id={`admin-member-edit-${item.id}`}
+                            onClick={() => handleStartEditDirectoryMember(item)}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition"
+                            title={t('editBtn')}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            id={`admin-member-delete-${item.id}`}
+                            onClick={() => handleDeleteDirectoryMember(item.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                            title={t('deleteBtn')}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                  {directoryMembers.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">
+                      {language === 'ar' ? 'لا توجد بطاقات مسجلة حالياً. انقر على الزر أعلاه لإضافة أول بطاقة.' : 'Henüz kart eklenmemiş.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'courses' && (
           <div id="admin-tab-courses-content">
             {editCourseItem ? (
@@ -1751,28 +2342,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                 {/* Highly Polished Image Management block */}
                 <div className="space-y-2 border border-slate-150 p-3.5 rounded-xl bg-slate-50/50">
-                  <div className="flex items-center gap-3">
-                    {editActivityItem.image && (
-                      <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-white">
-                        <img src={editActivityItem.image} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {editActivityItem.image && (
+                        <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-white">
+                          <img src={editActivityItem.image} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-500">
+                        <span className="font-bold text-slate-700 block text-xs">
+                          {language === 'ar' ? 'صورة الفعالية' : 'Etkinlik Görseli'}
+                        </span>
+                        {language === 'ar' ? 'اختر صورة من جهازك أو ضع رابط ويب مباشرة مع إمكانية اقتصاص أي جزء.' : 'Cihazınızdan bir görsel seçin veya doğrudan bir URL girin, dilediğiniz alanı kırpın.'}
                       </div>
-                    )}
-                    <div className="text-[10px] text-slate-500">
-                      <span className="font-bold text-slate-700 block text-xs">
-                        {language === 'ar' ? 'صورة الفعالية' : 'Etkinlik Görseli'}
-                      </span>
-                      {language === 'ar' ? 'اختر صورة من جهازك أو ضع رابط ويب مباشرة.' : 'Cihazınızdan bir görsel seçin veya doğrudan bir URL girin.'}
                     </div>
+
+                    {editActivityItem.image && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCropperForExisting(
+                          editActivityItem.image!,
+                          (url) => setEditActivityItem({ ...editActivityItem, image: url }),
+                          '16:9',
+                          language === 'ar' ? 'اقتصاص صورة الفعالية' : 'Etkinlik Görselini Kırp'
+                        )}
+                        className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shrink-0 transition"
+                        title={language === 'ar' ? 'قص / تعديل الصورة' : 'Kırp / Düzenle'}
+                      >
+                        <Crop className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{language === 'ar' ? 'قص الصورة' : 'Kırp'}</span>
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px]">
                     <div className="space-y-1">
                       <label className="block text-slate-600 font-bold">
-                        {language === 'ar' ? 'رفع ملف صورة جديد' : 'Yeni Fotoğraf Dosyası Yükle'}
+                        {language === 'ar' ? 'رفع ملف صورة واقتصاصه' : 'Fotoğraf Dosyası Yükle & Kırp'}
                       </label>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleImageUpload(e, (url) => setEditActivityItem({ ...editActivityItem, image: url }))}
+                        onChange={(e) => handleImageUpload(
+                          e, 
+                          (url) => setEditActivityItem({ ...editActivityItem, image: url }),
+                          '16:9',
+                          language === 'ar' ? 'اقتصاص وتحديد صورة الفعالية' : 'Etkinlik Görselini Kırp'
+                        )}
                         className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
                       />
                     </div>
@@ -2261,33 +2876,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 shadow-md flex items-center justify-center overflow-hidden shrink-0">
-                <img src={logo} alt="Current Logo" className="w-full h-full object-cover" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 shadow-md flex items-center justify-center overflow-hidden shrink-0">
+                  <img src={logo} alt="Current Logo" className="w-full h-full object-cover" />
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <span className="font-bold text-slate-700 block">
+                    {language === 'ar' ? 'معاينة الشعار الحالي' : 'Mevcut Logo Önizlemesi'}
+                  </span>
+                  <p className="text-[11px] text-slate-500">
+                    {language === 'ar' ? 'يدعم الملفات من نوع PNG, JPG أو روابط ويب مباشرة مع إمكانية القص الدائري/المربع.' : 'PNG, JPG dosyalarını veya doğrudan web bağlantılarını destekler, kare/özel kırpma yapılabilir.'}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2 text-xs w-full">
-                <span className="font-bold text-slate-700 block">
-                  {language === 'ar' ? 'معاينة الشعار الحالي' : 'Mevcut Logo Önizlemesi'}
-                </span>
-                <p className="text-[11px] text-slate-500">
-                  {language === 'ar' ? 'يدعم الملفات من نوع PNG, JPG أو روابط ويب مباشرة.' : 'PNG, JPG dosyalarını veya doğrudan web bağlantılarını destekler.'}
-                </p>
-              </div>
+
+              {logo && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenCropperForExisting(
+                    logo,
+                    (url) => {
+                      onSaveLogo(url);
+                      triggerToast(language === 'ar' ? 'تم تحديث وقص الشعار بنجاح!' : 'Logo başarıyla kırpıldı ve güncellendi!');
+                    },
+                    '1:1',
+                    language === 'ar' ? 'اقتصاص وتحديد الشعار' : 'Logoyu Kırp ve Düzenle'
+                  )}
+                  className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition select-none"
+                >
+                  <Crop className="w-4 h-4" />
+                  <span>{language === 'ar' ? 'اقتصاص الشعار' : 'Logoyu Kırp'}</span>
+                </button>
+              )}
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1 text-xs">
                 <label className="block text-slate-700 font-bold mb-1">
-                  {language === 'ar' ? 'رفع ملف شعار جديد' : 'Yeni Logo Dosyası Yükle'}
+                  {language === 'ar' ? 'رفع ملف شعار واقتصاصه (1:1 مربع)' : 'Yeni Logo Dosyası Yükle & Kırp'}
                 </label>
                 <input
                   id="logo-upload-input"
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleImageUpload(e, (url) => {
-                    onSaveLogo(url);
-                    triggerToast(language === 'ar' ? 'تم تحديث الشعار بنجاح!' : 'Logo başarıyla güncellendi!');
-                  })}
+                  onChange={(e) => handleImageUpload(
+                    e, 
+                    (url) => {
+                      onSaveLogo(url);
+                      triggerToast(language === 'ar' ? 'تم تحديث الشعار بنجاح!' : 'Logo başarıyla güncellendi!');
+                    },
+                    '1:1',
+                    language === 'ar' ? 'اقتصاص وتحديد الشعار' : 'Logoyu Kırp'
+                  )}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
                 />
               </div>
@@ -2454,6 +3095,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
       </div>
+
+      {/* Interactive Image Cropper Modal */}
+      {cropModalState.isOpen && (
+        <ImageCropperModal
+          isOpen={cropModalState.isOpen}
+          imageSrc={cropModalState.imageSrc}
+          onClose={() => setCropModalState({ ...cropModalState, isOpen: false })}
+          onCropComplete={(croppedUrl) => {
+            cropModalState.onCropComplete(croppedUrl);
+            setCropModalState({ ...cropModalState, isOpen: false });
+          }}
+          aspectRatioPreset={cropModalState.aspectRatioPreset}
+          title={cropModalState.title}
+        />
+      )}
 
     </div>
   );

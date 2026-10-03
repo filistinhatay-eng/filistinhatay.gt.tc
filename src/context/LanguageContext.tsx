@@ -21,10 +21,29 @@ const translations = {
     pastActivities: "الأنشطة السابقة",
     university: "عن الجامعة (İSTE)",
     residency: "الإقامة الطلابية (تركيا)",
+    directory: "دليل الطلاب والأعضاء",
     admin: "لوحة التحكم",
     adminPanelTitle: "بوابة الإدارة المشتركة",
     languageLabel: "Türkçe",
     languageCode: "TR",
+    darkMode: "الوضع الداكن",
+    lightMode: "الوضع الفاتح",
+    themeToggle: "تبديل المظهر",
+
+    // Directory / Members Section
+    directoryTitle: "دليل الطلاب وأعضاء التجمع",
+    directorySub: "بطاقات تعريفية بأعضاء وطلاب تجمع فلسطين بجامعة إسكندرون التقنية مصنفة حسب التخصص والفئات.",
+    allMembers: "جميع البطاقات",
+    searchMembersPlaceholder: "ابحث بالاسم، التخصص، أو التصنيف...",
+    classification: "التصنيف",
+    specialization: "التخصص",
+    academicYearLabel: "المرحلة الدراسية",
+    contactMember: "تواصل",
+    noMembersFound: "لم يتم العثور على بطاقات تطابق بحثك.",
+    membersCount: "بطاقة مسجلة",
+    filterByCategory: "تصفية حسب التصنيف",
+    filterByMajor: "تصفية حسب التخصص",
+    allMajors: "كل التخصصات",
 
     // Banner & Headers
     announcementsTitle: "إعلانات عاجلة",
@@ -51,6 +70,12 @@ const translations = {
     usefulPortals: "البوابات والمواقع الرسمية الهامة",
     portalsSub: "روابط سريعة وموثوقة تهم الطالب خلال مسيرته الجامعية اليومية والأكاديمية.",
     visitSite: "زيارة الموقع الرسمي",
+    shareLinksPage: "مشاركة صفحة الروابط",
+    shareLinksModalTitle: "مشاركة دليل الروابط الهامة",
+    shareLinksModalDesc: "انسخ الرابط المباشر أو شاركه عبر وسائل التواصل للوصول فورياً إلى صفحة الروابط الهامة.",
+    shareViaWhatsApp: "واتساب",
+    shareViaTelegram: "تلغرام",
+    shareViaTwitter: "منصة X",
 
     // Courses Section
     academicMaterials: "المكتبة الرقمية والمواد التعليمية",
@@ -176,8 +201,11 @@ const translations = {
     
     // Footer
     footerDesc: "المنصة الرسمية للتمثيل الطلابي والثقافي للطلاب الفلسطينيين في هاتاي بجامعة إسكندرون التقنية. نعمل على مد جسور التواصل الأكاديمي ودعم وتوجيه طلابنا.",
-    rightsReserved: "جميع الحقوق محفوظة © تجمع الطلاب الفلسطينيين في هاتاي - جامعة إسكندرون التقنية",
-    palesIdentity: "فلسطينُ في القلوبِ نبضٌ، وفي الغربةِ وطنٌ لا يغيب 🇵🇸"
+    rightsReserved: "جميع حقوق الموقع كاملة محفوظة لـ Abdulrahman Abudaqqa © 2026",
+    palesIdentity: "فلسطينُ في القلوبِ نبضٌ، وفي الغربةِ وطنٌ لا يغيب 🇵🇸",
+    websiteRights: "جميع حقوق الموقع كاملة محفوظة لـ:",
+    developerName: "Abdulrahman Abudaqqa",
+    linkedinProfile: "حساب LinkedIn"
   },
   tr: {
     // Navigation
@@ -190,10 +218,29 @@ const translations = {
     pastActivities: "Geçmiş Etkinlikler",
     university: "Üniversite Hakkında (İSTE)",
     residency: "Öğrenci İkamet İzni",
+    directory: "Öğrenci & Üye Rehberi",
     admin: "Yönetim Paneli",
     adminPanelTitle: "Yönetici Giriş Kapısı",
     languageLabel: "العربية",
     languageCode: "AR",
+    darkMode: "Karanlık Mod",
+    lightMode: "Aydınlık Mod",
+    themeToggle: "Tema Değiştir",
+
+    // Directory / Members Section
+    directoryTitle: "Öğrenci & Topluluk Üye Rehberi",
+    directorySub: "İskenderun Teknik Üniversitesi'ndeki Filistinli öğrenci ve topluluk üyelerinin bölüm ve kategorilere göre kartları.",
+    allMembers: "Tüm Kartlar",
+    searchMembersPlaceholder: "İsim, bölüm veya kategori ile arayın...",
+    classification: "Kategori / Sınıflandırma",
+    specialization: "Bölüm / Uzmanlık",
+    academicYearLabel: "Öğrenim Aşaması / Sınıf",
+    contactMember: "İletişim",
+    noMembersFound: "Aramanıza uygun kart bulunamadı.",
+    membersCount: "Kayıtlı Kart",
+    filterByCategory: "Kategoriye Göre Filtrele",
+    filterByMajor: "Bölüme Göre Filtrele",
+    allMajors: "Tüm Bölümler",
 
     // Banner & Headers
     announcementsTitle: "Son Dakika",
@@ -220,6 +267,12 @@ const translations = {
     usefulPortals: "Önemli ve Resmi Web Portalları",
     portalsSub: "Öğrencilerin günlük akademik yaşamlarında ihtiyaç duyduğu hızlı ve güvenilir bağlantılar.",
     visitSite: "Resmi Siteden Ziyaret Et",
+    shareLinksPage: "Bağlantılar Sayfasını Paylaş",
+    shareLinksModalTitle: "Önemli Bağlantılar Rehberini Paylaş",
+    shareLinksModalDesc: "Doğrudan bağlantıyı kopyalayın veya önemli bağlantılar sayfasına hızlı erişim için paylaşın.",
+    shareViaWhatsApp: "WhatsApp",
+    shareViaTelegram: "Telegram",
+    shareViaTwitter: "X (Twitter)",
 
     // Courses Section
     academicMaterials: "Dijital Kütüphane & Eğitim Materyalleri",
@@ -345,8 +398,11 @@ const translations = {
 
     // Footer
     footerDesc: "İskenderun Teknik Üniversitesi'ndeki Filistinli öğrencilerin resmi akademik ve kültürel temsil platformudur (Hatay Filistin Öğrenci Topluluğu). Öğrencilerimize rehberlik sağlamak için çalışıyoruz.",
-    rightsReserved: "Tüm hakları saklıdır © Hatay Filistin Öğrenci Topluluğu - İskenderun Teknik Üniversitesi",
-    palesIdentity: "Filistin kalbimizde bir çarpan nabız, gurbette ise hiç sönmeyen vatanımızdır 🇵🇸"
+    rightsReserved: "Tüm web sitesi hakları tamamen saklıdır © Abdulrahman Abudaqqa 2026",
+    palesIdentity: "Filistin kalbimizde bir çarpan nabız, gurbette ise hiç sönmeyen vatanımızdır 🇵🇸",
+    websiteRights: "Tüm Web Sitesi Hakları Tamamen Saklıdır:",
+    developerName: "Abdulrahman Abudaqqa",
+    linkedinProfile: "LinkedIn Profili"
   }
 };
 

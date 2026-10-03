@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActivityItem } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { Calendar, MapPin, Clock, Users, ArrowRight, CheckCircle2, Ticket, Sparkles, Share2, Mail } from 'lucide-react';
@@ -36,6 +36,26 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({ activities
   // Share Modal State
   const [sharingItem, setSharingItem] = useState<{ id: string; title: string; type: 'activity' | 'course' } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Automatically scroll to shared activity link on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    const idParam = params.get('id');
+    
+    if (tabParam === 'activities' && idParam && activities && activities.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`activity-card-${idParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-red-600', 'ring-offset-2');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-red-600', 'ring-offset-2');
+          }, 4000);
+        }
+      }, 800);
+    }
+  }, [activities]);
 
   const handleOpenShare = (id: string, title: string, type: 'activity' | 'course') => {
     setSharingItem({ id, title, type });

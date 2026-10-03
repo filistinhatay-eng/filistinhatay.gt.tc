@@ -1,6 +1,6 @@
 {
-  "name": "Palestinian Student Union - Iskenderun Technical University",
-  "description": "Official bilingual (Arabic & Turkish) web platform for the Palestinian Student Gathering in Hatay (تجمع الطلاب الفلسطينيين في هاتاي) at Iskenderun Technical University (İskenderun Teknik Üniversitesi). Features news, academic courses, activities, important links, university details, and a responsive admin dashboard.",
+  "name": "تجمع الطلاب الفلسطينيين - جامعة إسكندرون التقنية | Filistin Öğrenci Topluluğu - İSTE",
+  "description": "المنصة الرسمية لتجمع الطلاب الفلسطينيين في هاتاي بجامعة إسكندرون التقنية (İSTE). İskenderun Teknik Üniversitesi Filistin Öğrenci Topluluğu resmi web platformu. أخبار، دورات، فعاليات، وروابط هامة للطلاب.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

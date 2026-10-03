@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CourseItem, DriveFolder, DriveFile } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { 
@@ -120,6 +120,45 @@ export const CoursesSection: React.FC<CoursesSectionProps> = ({ courses, registe
   // Share Modal State
   const [sharingItem, setSharingItem] = useState<{ id: string; title: string; type: 'activity' | 'course' } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Automatically open the correct faculty and department for shared course links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    const idParam = params.get('id');
+    
+    if (tabParam === 'courses' && idParam && courses && courses.length > 0) {
+      const course = courses.find(c => c.id === idParam);
+      if (course) {
+        // Find corresponding faculty in DEFAULT_FACULTIES
+        const foundFaculty = DEFAULT_FACULTIES.find(fac => 
+          fac.name.ar === course.faculty?.ar || fac.name.tr === course.faculty?.tr
+        );
+        if (foundFaculty) {
+          const foundDept = foundFaculty.departments.find(dept => 
+            dept.ar === course.department?.ar || dept.tr === course.department?.tr
+          );
+          if (foundDept) {
+            setSelectedFaculty(foundFaculty);
+            setSelectedDept(foundDept);
+            setNavStage(2);
+            
+            // Smooth scroll to card after rendering
+            setTimeout(() => {
+              const el = document.getElementById(`course-card-${idParam}`);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                setTimeout(() => {
+                  el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                }, 4000);
+              }
+            }, 800);
+          }
+        }
+      }
+    }
+  }, [courses]);
 
   const handleOpenShare = (id: string, title: string) => {
     setSharingItem({ id, title, type: 'course' });
@@ -872,7 +911,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   handleDownloadFile, handleDownloadFileObj, onShare, onRegister
 }) => {
   return (
-    <div className="bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-xs hover:border-burgundy-700/30 hover:shadow-sm transition duration-300 flex flex-col justify-between space-y-5 relative overflow-hidden group">
+    <div id={`course-card-${item.id}`} className="bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-xs hover:border-burgundy-700/30 hover:shadow-sm transition duration-300 flex flex-col justify-between space-y-5 relative overflow-hidden group">
       <div className="ornament-tatreez-corner" />
       
       <div className="space-y-4 relative z-10">

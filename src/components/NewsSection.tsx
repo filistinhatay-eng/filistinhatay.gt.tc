@@ -21,9 +21,17 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, incrementViews }
 
   // Dual-mode news switcher ('union' = Union News, 'university' = University Website News)
   const [newsType, setNewsType] = useState<'union' | 'university'>('union');
-  const [univNews, setUnivNews] = useState<UniversityNewsItem[]>(initialUniversityNews);
+  const [univNews, setUnivNews] = useState<UniversityNewsItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('pales_union_live_iste_news');
+      return cached ? JSON.parse(cached) : initialUniversityNews;
+    } catch {
+      return initialUniversityNews;
+    }
+  });
   const [isLoadingUniv, setIsLoadingUniv] = useState(false);
   const [univError, setUnivError] = useState<string | null>(null);
+  const [foreignOnly, setForeignOnly] = useState(false);
 
   // Extract unique categories for Union News in both languages (indexed by original Turkish)
   const uniqueCategories = Array.from(new Set(news.map(item => item.category.tr)));
@@ -33,15 +41,42 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, incrementViews }
     setSelectedNews({ ...item, views: item.views + 1 });
   };
 
-  const fetchUniversityNews = async () => {
+  const fetchUniversityNews = async (forceRefresh = false) => {
     setIsLoadingUniv(true);
     setUnivError(null);
-    // Simulate a brief local loading effect to keep the refresh button interactive
-    setTimeout(() => {
-      setUnivNews(initialUniversityNews);
+    try {
+      const url = forceRefresh ? '/api/university-news?refresh=true' : '/api/university-news';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        setUnivNews(json.data);
+        try {
+          localStorage.setItem('pales_union_live_iste_news', JSON.stringify(json.data));
+        } catch (e) {
+          console.warn('Could not save to localStorage', e);
+        }
+      } else if (json.data && Array.isArray(json.data)) {
+        setUnivNews(json.data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching university announcements:', err);
+      setUnivError(language === 'ar' ? 'تعذر جلب الإعلانات المباشرة حالياً، يتم عرض البيانات المحفوظة.' : 'Canlı duyurular alınamadı, kaydedilen veriler gösteriliyor.');
+    } finally {
       setIsLoadingUniv(false);
-    }, 400);
+    }
   };
+
+  // Automatically fetch university news on initial mount and when university tab is activated
+  useEffect(() => {
+    fetchUniversityNews(false);
+  }, []);
+
+  useEffect(() => {
+    if (newsType === 'university' && univNews.length === 0) {
+      fetchUniversityNews(false);
+    }
+  }, [newsType]);
 
   // Filtering for Union News
   const filteredNews = news.filter((item) => {
@@ -55,6 +90,9 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, incrementViews }
 
   // Filtering for University News
   const filteredUnivNews = univNews.filter((item) => {
+    if (foreignOnly && !item.isRelevantToForeigners) {
+      return false;
+    }
     const term = searchTerm.toLowerCase();
     return (
       item.titleTr.toLowerCase().includes(term) ||
@@ -160,12 +198,29 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, incrementViews }
                     })}
                   </>
                 ) : (
-                  <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
-                    <RefreshCw 
-                      onClick={fetchUniversityNews}
-                      className={`w-4 h-4 cursor-pointer hover:text-slate-900 transition ${isLoadingUniv ? 'animate-spin' : ''}`}
-                    />
-                    <span>{language === 'ar' ? 'مزامنة مباشرة مع موقع الجامعة الرسمي' : 'İSTE resmî web sitesi ile canlı eşleşme'}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      id="refresh-univ-news-btn"
+                      onClick={() => fetchUniversityNews(true)}
+                      disabled={isLoadingUniv}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUniv ? 'animate-spin' : ''}`} />
+                      <span>{language === 'ar' ? 'تحديث الإعلانات (Groq AI)' : 'Duyuruları Yenile'}</span>
+                    </button>
+                    
+                    <button
+                      id="toggle-foreign-only-btn"
+                      onClick={() => setForeignOnly(!foreignOnly)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border flex items-center gap-1.5 cursor-pointer ${
+                        foreignOnly
+                          ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
+                          : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{language === 'ar' ? 'للطلاب الأجانب فقط' : 'Yalnızca Yabancı Öğrenciler'}</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -337,12 +392,28 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, incrementViews }
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs text-slate-600 leading-relaxed text-justify">
                           <div className="space-y-1">
                             <span className="text-[9px] font-extrabold text-red-600 bg-red-50/50 px-1.5 py-0.5 rounded select-none uppercase">العربية مترجم</span>
-                            <p className="whitespace-pre-wrap">{item.contentAr}</p>
+                            <p className="whitespace-pre-wrap leading-relaxed">{item.contentAr}</p>
                           </div>
                           <div className="space-y-1 bg-slate-50/50 p-3 rounded-lg border border-slate-100" dir="ltr">
                             <span className="text-[9px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded select-none uppercase">Türkçe Orijinal</span>
-                            <p className="text-slate-500 whitespace-pre-wrap">{item.contentTr}</p>
+                            <p className="text-slate-500 whitespace-pre-wrap leading-relaxed">{item.contentTr}</p>
                           </div>
+                        </div>
+
+                        {/* Direct Link Action */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            İskenderun Teknik Üniversitesi
+                          </span>
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 hover:underline transition"
+                          >
+                            <span>{language === 'ar' ? 'عرض الإعلان على موقع الجامعة (iste.edu.tr)' : 'Resmi Duyuruyu İncele (iste.edu.tr)'}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         </div>
                       </motion.div>
                     ))}

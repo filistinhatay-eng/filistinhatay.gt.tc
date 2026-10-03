@@ -144,3 +144,17 @@ export interface UniversityNewsItem {
   isRelevantToForeigners: boolean;
 }
 
+export interface DirectoryMember {
+  id: string;
+  name: MultilingualText;
+  major: MultilingualText; // التخصص
+  category: MultilingualText; // التصنيف (e.g., الهيئة الإدارية, ممثلو الأقسام, متطوعون, الطلاب المتميزون, الخريجون, إلخ)
+  image?: string; // صورة
+  roleTitle?: MultilingualText; // صفة أو مسمى إضافي (اختياري)
+  academicYear?: MultilingualText; // المرحلة الدراسية (e.g. سنة 3, خريج, ماجستير)
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  bio?: MultilingualText;
+}
+

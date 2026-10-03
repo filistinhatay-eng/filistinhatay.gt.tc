@@ -3,33 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { HomePage } from './components/HomePage';
-import { NewsSection } from './components/NewsSection';
 import { ImportantLinks } from './components/ImportantLinks';
-import { CoursesSection } from './components/CoursesSection';
-import { ActivitiesSection } from './components/ActivitiesSection';
-import { PastActivitiesSection } from './components/PastActivitiesSection';
-import { UniversityInfoSection } from './components/UniversityInfoSection';
-import { ResidencySection } from './components/ResidencySection';
-import { AdminPanel } from './components/AdminPanel';
 import { LoginModal } from './components/LoginModal';
-import { DeptAnnouncementsSection } from './components/DeptAnnouncementsSection';
+
+// Dynamic lazy-loaded components for optimal bundle splitting
+const NewsSection = lazy(() => import('./components/NewsSection').then(m => ({ default: m.NewsSection })));
+const CoursesSection = lazy(() => import('./components/CoursesSection').then(m => ({ default: m.CoursesSection })));
+const ActivitiesSection = lazy(() => import('./components/ActivitiesSection').then(m => ({ default: m.ActivitiesSection })));
+const PastActivitiesSection = lazy(() => import('./components/PastActivitiesSection').then(m => ({ default: m.PastActivitiesSection })));
+const UniversityInfoSection = lazy(() => import('./components/UniversityInfoSection').then(m => ({ default: m.UniversityInfoSection })));
+const ResidencySection = lazy(() => import('./components/ResidencySection').then(m => ({ default: m.ResidencySection })));
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
+const DeptAnnouncementsSection = lazy(() => import('./components/DeptAnnouncementsSection').then(m => ({ default: m.DeptAnnouncementsSection })));
+const DirectorySection = lazy(() => import('./components/DirectorySection').then(m => ({ default: m.DirectorySection })));
+
 // @ts-ignore
 import logoImg from './assets/images/logo.jpeg';
 
 import { 
   NewsItem, CourseItem, DeptAnnouncementItem, ActivityItem, ImportantLink, 
-  UniversityInfo, TopAnnouncement 
+  UniversityInfo, TopAnnouncement, DirectoryMember 
 } from './types';
 
 import { 
   initialNews, initialCourses, initialDeptAnnouncements, initialActivities, 
-  initialImportantLinks, initialUniversityInfo, initialAnnouncements 
+  initialImportantLinks, initialUniversityInfo, initialAnnouncements,
+  initialDirectoryMembers
 } from './data/initialData';
 
 import { db } from './firebase';
@@ -55,6 +61,20 @@ function AppMain() {
       return saved ? JSON.parse(saved) : initialNews;
     } catch (e) {
       return initialNews;
+    }
+  });
+
+  const [directoryMembers, setDirectoryMembers] = useState<DirectoryMember[]>(() => {
+    try {
+      const saved = localStorage.getItem('pales_union_directory_members');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const cleaned = parsed.filter((m: DirectoryMember) => !['member-2', 'member-3', 'member-4', 'member-5', 'member-6', 'member-7', 'member-8'].includes(m.id));
+        return cleaned.length > 0 ? cleaned : initialDirectoryMembers;
+      }
+      return initialDirectoryMembers;
+    } catch (e) {
+      return initialDirectoryMembers;
     }
   });
 
@@ -145,6 +165,15 @@ function AppMain() {
             setNews(data.news);
             localStorage.setItem('pales_union_news', JSON.stringify(data.news));
           }
+          if (data.directoryMembers) {
+            const cleaned = (data.directoryMembers as DirectoryMember[]).filter((m: DirectoryMember) => !['member-2', 'member-3', 'member-4', 'member-5', 'member-6', 'member-7', 'member-8'].includes(m.id));
+            const finalMembers = cleaned.length > 0 ? cleaned : initialDirectoryMembers;
+            setDirectoryMembers(finalMembers);
+            localStorage.setItem('pales_union_directory_members', JSON.stringify(finalMembers));
+            if (cleaned.length !== data.directoryMembers.length) {
+              saveToFirestore({ directoryMembers: finalMembers });
+            }
+          }
           if (data.courses) {
             setCourses(data.courses);
             localStorage.setItem('pales_union_courses', JSON.stringify(data.courses));
@@ -182,6 +211,7 @@ function AppMain() {
           // Document does not exist yet (first-time deployment). Let's seed it.
           const seedPayload = {
             news: initialNews,
+            directoryMembers: initialDirectoryMembers,
             courses: initialCourses,
             deptAnnouncements: initialDeptAnnouncements,
             activities: initialActivities,
@@ -202,11 +232,51 @@ function AppMain() {
     loadFirestoreData();
   }, []);
 
+  // Deep-linking tab synchronization on load and hash/search handling
+  useEffect(() => {
+    const handleUrlTab = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const hashParam = window.location.hash.replace('#', '');
+      
+      const target = tabParam || hashParam;
+      const validTabs = ['home', 'directory', 'news', 'links', 'courses', 'deptAnnouncements', 'activities', 'pastActivities', 'university', 'residency', 'admin'];
+      if (target && validTabs.includes(target)) {
+        setCurrentTab(target);
+      }
+    };
+
+    handleUrlTab();
+    window.addEventListener('popstate', handleUrlTab);
+    return () => window.removeEventListener('popstate', handleUrlTab);
+  }, []);
+
+  // Keep browser URL query param in sync with active tab
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (currentTab === 'home') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', currentTab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {
+      console.warn('Could not sync URL state:', e);
+    }
+  }, [currentTab]);
+
   // Sync helpers with local storage and Firestore to persist modifications globally
   const updateNewsState = (newNews: NewsItem[]) => {
     setNews(newNews);
     localStorage.setItem('pales_union_news', JSON.stringify(newNews));
     saveToFirestore({ news: newNews });
+  };
+
+  const updateDirectoryMembersState = (newMembers: DirectoryMember[]) => {
+    setDirectoryMembers(newMembers);
+    localStorage.setItem('pales_union_directory_members', JSON.stringify(newMembers));
+    saveToFirestore({ directoryMembers: newMembers });
   };
 
   const updateCoursesState = (newCourses: CourseItem[]) => {
@@ -266,6 +336,23 @@ function AppMain() {
   const handleDeleteNewsItem = (id: string) => {
     const updatedNews = news.filter(n => n.id !== id);
     updateNewsState(updatedNews);
+  };
+
+  // ADMIN OPERATIONS: DIRECTORY MEMBERS
+  const handleSaveDirectoryMemberItem = (item: DirectoryMember) => {
+    const exists = directoryMembers.some(m => m.id === item.id);
+    let updated: DirectoryMember[];
+    if (exists) {
+      updated = directoryMembers.map(m => m.id === item.id ? item : m);
+    } else {
+      updated = [item, ...directoryMembers];
+    }
+    updateDirectoryMembersState(updated);
+  };
+
+  const handleDeleteDirectoryMemberItem = (id: string) => {
+    const updated = directoryMembers.filter(m => m.id !== id);
+    updateDirectoryMembersState(updated);
   };
 
   // ADMIN OPERATIONS: COURSES
@@ -454,6 +541,8 @@ function AppMain() {
 
   const renderActiveSection = () => {
     switch (currentTab) {
+      case 'directory':
+        return <DirectorySection members={directoryMembers} />;
       case 'news':
         return <NewsSection news={news} incrementViews={handleIncrementNewsViews} />;
       case 'links':
@@ -479,6 +568,7 @@ function AppMain() {
         return isAdminLoggedIn ? (
           <AdminPanel
             news={news}
+            directoryMembers={directoryMembers}
             courses={courses}
             deptAnnouncements={deptAnnouncements}
             activities={activities}
@@ -494,6 +584,8 @@ function AppMain() {
             }}
             onSaveNews={handleSaveNewsItem}
             onDeleteNews={handleDeleteNewsItem}
+            onSaveDirectoryMember={handleSaveDirectoryMemberItem}
+            onDeleteDirectoryMember={handleDeleteDirectoryMemberItem}
             onSaveCourse={handleSaveCourseItem}
             onDeleteCourse={handleDeleteCourseItem}
             onSaveDeptAnn={handleSaveDeptAnnItem}
@@ -528,7 +620,7 @@ function AppMain() {
   };
 
   return (
-    <div id="pales-union-portal-root" className="min-h-screen flex flex-col bg-geometric-pattern font-sans antialiased text-slate-800 relative">
+    <div id="pales-union-portal-root" className="min-h-screen flex flex-col bg-geometric-pattern font-sans antialiased text-slate-800 dark:text-slate-100 relative transition-colors">
       
       {/* Decorative top gold lining */}
       <div className="h-1 bg-gradient-to-r from-amber-500 via-red-700 to-amber-500 w-full" />
@@ -548,7 +640,16 @@ function AppMain() {
 
       {/* Main Page Canvas Stage */}
       <main id="app-main-content-stage" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {renderActiveSection()}
+        <Suspense fallback={
+          <div className="flex flex-col items-center justify-center min-h-[350px] py-12">
+            <div className="w-10 h-10 border-3 border-emerald-600 dark:border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="mt-4 text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+              {t('loading') || 'جارٍ التحميل...'}
+            </span>
+          </div>
+        }>
+          {renderActiveSection()}
+        </Suspense>
       </main>
 
       {/* Shared Footer component */}
@@ -568,8 +669,10 @@ function AppMain() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AppMain />
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AppMain />
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
